@@ -1,41 +1,38 @@
-name: Node.js CI
+name: Run Tests and Close PR on Failure
 
 on:
   pull_request:
-    branches: [ main ]
+    types: [opened, synchronize, reopened]
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [12.x, 14.x, 16.x]
-
     steps:
     - uses: actions/checkout@v2
 
-    - name: Execute text
+    - name: Execute tests
       run: npm test
 
     - name: if fail
-      uses: actions/github-script@0.2.0
+      if: failure()
+      uses: actions/github-script@v6
       with:
-        github-token: ${{github.token}}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const ref = "${{github.ref}}"
-          const pull_number = Number(ref.split("/")[2])
+          const ref = context.payload.pull_request.head.ref
+          const pull_number = context.payload.pull_request.number
+
           await github.pulls.createReview({
-            ...context.repo,
-            pull_number,
-            body:"테스트가 실패했습니다.",
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: pull_number,
+            body: "테스트가 실패했습니다.",
             event: "REQUEST_CHANGES"
           })
+
           await github.pulls.update({
-            ...context.repo,
-            pull_number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: pull_number,
             state: "closed"
           })
-      if: failure()                 
-    
