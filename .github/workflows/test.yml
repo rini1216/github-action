@@ -26,13 +26,6 @@ jobs:
         script: |
           const ref = "${{github.ref}}"
           const pull_number = Number(ref.split("/")[2])
-
-         
-          console.log("Pull Request Number:", pull_number);
-          console.log("Repository Owner:", context.repo.owner);
-          console.log("Repository Name:", context.repo.repo);
-
-          
           await github.pulls.createReview({
             ...context.repo,
             pull_number,
